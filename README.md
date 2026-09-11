@@ -255,10 +255,13 @@ By comparing expected net returns, CropWise aims to help farmers:
 
 **Team Members:**
 
-* Member 1
-* Member 2
-* Member 3
-* Member 4
+
+ Member 1- Aum Vyas
+ Member 2 - Rathod Yash 
+ Member 3 - Vachheta Hardik
+ Member 4 - Kartvya Dave
+
+
 
 ---
 
