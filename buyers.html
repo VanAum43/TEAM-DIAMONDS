@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find Buyers — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">VERIFIED BUYERS</div>
+      <h1 style="font-size:26px;">Find Buyers</h1>
+      <p>Demo buyer profiles for prototype demonstration.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search buyer or city…" style="flex:1;min-width:180px;">
+      <select id="cropFilter"><option value="">Any crop</option></select>
+      <input type="number" id="minPrice" placeholder="Min price ₹/q" style="width:130px;">
+      <input type="number" id="minQty" placeholder="Min quantity (q)" style="width:140px;">
+      <label class="checkbox-row" style="white-space:nowrap;"><input type="checkbox" id="verifiedOnly"> Verified only</label>
+      <select id="paySpeed"><option value="">Any payment speed</option><option>Fast</option><option>Medium</option><option>Slow</option></select>
+      <button class="btn btn-secondary btn-sm" id="clearFilters">Clear</button>
+    </div>
+  </div>
+
+  <div id="resultsMeta" style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;"></div>
+  <div class="grid grid-3" id="buyersGrid"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="js/buyers.js"></script>
+</body>
+</html>

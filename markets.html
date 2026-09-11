@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Intelligence — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">MARKET INTELLIGENCE</div>
+      <h1 style="font-size:26px;">Explore nearby mandis</h1>
+      <p>Compare quoted prices, costs and estimated net return before you decide where to sell.</p>
+    </div>
+    <span class="demo-tag" id="demoTag"></span>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search market or city…" style="flex:1;min-width:180px;">
+      <select id="cropFilter"></select>
+      <select id="gradeFilter">
+        <option value="">Any grade</option>
+        <option value="A">Grade A</option>
+        <option value="B">Grade B</option>
+        <option value="C">Grade C</option>
+      </select>
+      <select id="radiusFilter">
+        <option value="9999">Any distance</option>
+        <option value="50">Within 50 km</option>
+        <option value="100">Within 100 km</option>
+        <option value="150">Within 150 km</option>
+      </select>
+      <input type="number" id="quantityInput" value="25" min="1" style="width:90px;" title="Quantity (quintals)">
+      <button class="btn btn-secondary btn-sm" id="clearFilters">Clear</button>
+    </div>
+  </div>
+
+  <div id="resultsMeta" style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;"></div>
+  <div id="marketsList"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script src="js/markets.js"></script>
+</body>
+</html>

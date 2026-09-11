@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <div class="page-head"><div><div class="eyebrow">PROFILE</div><h1 style="font-size:26px;">Profile &amp; Settings</h1></div></div>
+
+  <div class="grid" style="grid-template-columns:.9fr 1.1fr;gap:20px;align-items:start;">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+        <div class="avatar" style="width:56px;height:56px;font-size:18px;" id="bigAvatar"></div>
+        <div><div id="profName" style="font-family:var(--font-display);font-size:19px;font-weight:600;color:var(--dark-green);"></div><div id="profMobile" style="font-size:12.5px;color:var(--text-tertiary);"></div></div>
+      </div>
+      <form id="profileForm">
+        <div class="field"><label>Full name</label><input type="text" id="f_name"></div>
+        <div class="field"><label>Mobile</label><input type="text" id="f_mobile" disabled></div>
+        <div class="field"><label>Primary crop</label><select id="f_crop"></select></div>
+        <div class="field">
+          <label>Location</label>
+          <div class="loc-box detected" id="locDisplay" style="cursor:pointer;">
+            <div class="pin"></div>
+            <div><div class="name" id="locName"></div><div class="sub">Tap Update Location to change</div></div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="updateLocBtn" style="margin-top:10px;">Update Location</button>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:6px;">Save Changes</button>
+      </form>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="font-size:15px;">Selling preferences</h3>
+        <div class="grid grid-2">
+          <div class="field"><label>Preferred market</label><select id="prefMarket"></select></div>
+          <div class="field"><label>Language</label><select id="prefLang"><option>English</option><option>ગુજરાતી (Gujarati)</option><option>हिंदी (Hindi)</option></select></div>
+        </div>
+        <div class="checkbox-row" style="margin-bottom:8px;"><input type="checkbox" id="notifPrice" checked> Notify me about price changes</div>
+        <div class="checkbox-row" style="margin-bottom:8px;"><input type="checkbox" id="notifBuyer" checked> Notify me about new buyers</div>
+        <div class="checkbox-row"><input type="checkbox" id="notifPayment" checked> Notify me about payment updates</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:14px;" id="savePrefsBtn">Save Preferences</button>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="font-size:15px;">Saved markets</h3>
+        <div id="savedMarkets" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:15px;">Help &amp; Support</h3>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <a href="#" class="support-link" data-msg="Help Center — browse FAQs and guides." style="padding:10px 0;border-bottom:1px solid var(--border);">Help Center</a>
+          <a href="#" class="support-link" data-msg="Contact Support — support@cropwise.app · 1800-000-2026" style="padding:10px 0;border-bottom:1px solid var(--border);">Contact Support</a>
+          <a href="#" class="support-link" data-msg="Thanks — your issue has been logged for this prototype." style="padding:10px 0;border-bottom:1px solid var(--border);">Report an Issue</a>
+          <a href="#" class="support-link" data-msg="FAQs — see the Help Center for common questions." style="padding:10px 0;">FAQs</a>
+        </div>
+        <button class="btn btn-danger btn-block" id="logoutBtn" style="margin-top:16px;">Log Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+if(CW.requireAuth()){
+const user = CW.getSession();
+CW.mountShell('profile');
+
+document.getElementById('locDisplay').querySelector('.pin').innerHTML = CW.icon('pin');
+document.getElementById('bigAvatar').textContent = user.name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
+document.getElementById('profName').textContent = user.name;
+document.getElementById('profMobile').textContent = user.mobile;
+document.getElementById('f_name').value = user.name;
+document.getElementById('f_mobile').value = user.mobile;
+document.getElementById('locName').textContent = user.location ? user.location.label : 'Ahmedabad, Gujarat';
+
+const cropSel = document.getElementById('f_crop');
+CW.crops.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; cropSel.appendChild(o); });
+cropSel.value = user.crop || 'wheat';
+
+const prefMarket = document.getElementById('prefMarket');
+CW.markets.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.name; prefMarket.appendChild(o); });
+
+document.getElementById('savedMarkets').innerHTML = CW.markets.slice(0,3).map(m=>`<span class="badge badge-neutral">${m.name}</span>`).join('');
+
+document.getElementById('updateLocBtn').addEventListener('click', function(){
+  if(!navigator.geolocation){ CW.toast('Geolocation not supported on this browser.','warning'); return; }
+  this.textContent = 'Detecting…';
+  const btn = this;
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const {latitude,longitude} = pos.coords;
+    let label = `Location detected (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`;
+    try{
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+      if(res.ok){ const data = await res.json(); const l=[data.locality||data.city,data.principalSubdivision].filter(Boolean).join(', '); if(l) label=l; }
+    }catch(e){}
+    document.getElementById('locName').textContent = label;
+    CW.updateProfile({ location:{ label, lat:latitude, lng:longitude } });
+    btn.textContent = 'Update Location';
+    CW.toast('Location updated','success');
+  }, ()=>{ btn.textContent='Update Location'; CW.toast('Location access denied.','warning'); });
+});
+
+document.getElementById('profileForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  CW.updateProfile({ name: document.getElementById('f_name').value.trim() || user.name, crop: cropSel.value });
+  CW.toast('Profile updated','success');
+});
+document.getElementById('savePrefsBtn').addEventListener('click', ()=> CW.toast('Preferences saved','success'));
+document.querySelectorAll('.support-link').forEach(a=> a.addEventListener('click', e=>{ e.preventDefault(); CW.toast(a.dataset.msg,'info'); }));
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  CW.showModal('Log out of CropWise?', 'You will need to log in again to access your dashboard.', `
+    <button class="btn btn-secondary" onclick="CW.closeModal()">Cancel</button>
+    <button class="btn btn-danger" onclick="CW.logout()">Log Out</button>
+  `);
+});
+}
+</script>
+</body>
+</html>

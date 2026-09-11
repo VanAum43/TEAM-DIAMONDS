@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyze Your Crop — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">CROP ANALYSIS</div>
+      <h1 style="font-size:26px;">Analyze Your Crop</h1>
+      <p>Enter your crop profile to see its estimated value and the best selling strategy.</p>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:.85fr 1.15fr;gap:20px;align-items:start;">
+    <div class="card">
+      <h3 style="font-size:15px;">Your crop profile</h3>
+      <div class="field"><label>Crop</label><select id="cropSel"></select></div>
+      <div class="field"><label>Quantity (quintals)</label><input type="number" id="qtySel" value="25" min="1"></div>
+      <div class="field"><label>Grade</label><select id="gradeSel"><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option></select></div>
+      <div class="field"><label>Moisture (%)</label><input type="number" id="moistSel" value="10" min="0" max="30"></div>
+      <div class="field"><label>Expected harvest date</label><input type="date" id="harvestDate"></div>
+      <div class="field" style="margin-bottom:0;"><label>Preferred selling timeframe</label>
+        <select id="timeframeSel"><option>As soon as possible</option><option>Within a week</option><option>Flexible / can wait</option></select>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="eyebrow">CROP VALUE ESTIMATE</div>
+        <div class="grid grid-3" id="valueStats"></div>
+      </div>
+
+      <div class="card chart-card" style="margin-bottom:18px;">
+        <h3 style="font-size:15px;">Price comparison across markets</h3>
+        <div id="priceChart"></div>
+      </div>
+
+      <div class="card chart-card" style="margin-bottom:18px;">
+        <h3 style="font-size:15px;">Cost breakdown — best market</h3>
+        <div id="costChart"></div>
+      </div>
+
+      <div class="card" id="strategyBox"></div>
+
+      <div class="card" style="margin-top:18px;">
+        <h3 style="font-size:15px;">Recommended markets</h3>
+        <div id="recommendedMarkets"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+if(CW.requireAuth()){
+const user = CW.getSession();
+CW.mountShell('crop');
+
+const cropSel = document.getElementById('cropSel');
+CW.crops.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; cropSel.appendChild(o); });
+cropSel.value = user.crop || 'wheat';
+document.getElementById('qtySel').value = user.quantity || 25;
+document.getElementById('gradeSel').value = user.grade || 'A';
+document.getElementById('moistSel').value = user.moisture || 10;
+const d = new Date(); d.setDate(d.getDate()+3);
+document.getElementById('harvestDate').value = d.toISOString().slice(0,10);
+
+function barChart(items, color){
+  const max = Math.max(...items.map(i=>i.value), 1);
+  return `<div style="display:flex;flex-direction:column;gap:10px;">${items.map(i=>`
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;"><span>${i.label}</span><b class="tabular">${CW.formatINR(i.value)}</b></div>
+      <div style="background:var(--background);border-radius:6px;height:10px;overflow:hidden;"><div style="width:${(i.value/max*100).toFixed(1)}%;height:100%;background:${color};border-radius:6px;"></div></div>
+    </div>`).join('')}</div>`;
+}
+
+function render(){
+  const cropId = cropSel.value, quantity = parseInt(document.getElementById('qtySel').value)||25, grade = document.getElementById('gradeSel').value;
+  const ranked = CW.rankOpportunities(cropId, quantity, grade);
+  const best = ranked[0];
+
+  document.getElementById('valueStats').innerHTML = `
+    <div class="stat-card"><div class="label">Estimated gross value</div><div class="value tabular">${CW.formatINR(best.gross)}</div></div>
+    <div class="stat-card"><div class="label">Potential deductions</div><div class="value tabular" style="color:var(--danger);">-${CW.formatINR(best.totalDeductions)}</div></div>
+    <div class="stat-card"><div class="label">Estimated net value</div><div class="value tabular" style="color:var(--success);">${CW.formatINR(best.net)}</div></div>
+  `;
+
+  document.getElementById('priceChart').innerHTML = barChart(
+    ranked.slice(0,5).map(o=>({label:o.market.name, value:o.price})), 'var(--fresh-green)'
+  );
+  document.getElementById('costChart').innerHTML = barChart(best.breakdown.filter(b=>b.value>0), 'var(--wheat)');
+
+  const timeframe = document.getElementById('timeframeSel').value;
+  let strategy, reason;
+  if(best.market.demand === 'High' && timeframe !== 'Flexible / can wait'){
+    strategy = 'Sell now'; reason = `${best.market.name} shows high demand and strong net return today — waiting is unlikely to improve your outcome.`;
+  }else if(timeframe === 'Flexible / can wait'){
+    strategy = 'Wait 1–2 days'; reason = 'Demand and prices can shift slightly day to day. Since your timeframe is flexible, a short wait may improve arrivals data before you commit.';
+  }else{
+    strategy = 'Compare another market'; reason = 'The gap between your top options is small — it may be worth checking one more nearby market before deciding.';
+  }
+  document.getElementById('strategyBox').innerHTML = `
+    <div class="eyebrow">BEST SELLING STRATEGY</div>
+    <h3 style="font-size:19px;">${strategy}</h3>
+    <p>${reason}</p>
+    <p style="font-size:12px;color:var(--text-tertiary);">This is a mock intelligence suggestion for prototype purposes, not actual financial advice.</p>
+    <a href="sell-crop.html" class="btn btn-primary">Analyze My Crop &amp; Sell</a>
+  `;
+
+  document.getElementById('recommendedMarkets').innerHTML = ranked.slice(0,3).map((o,i)=>`
+    <div class="opp-row" style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <span>${i===0?'⭐ ':''}${o.market.name} <span style="color:var(--text-tertiary);">· ${o.market.distance} km</span></span>
+      <b class="tabular" style="color:var(--success);">${CW.formatINR(o.net)}</b>
+    </div>`).join('');
+}
+
+render();
+['cropSel','qtySel','gradeSel','moistSel','timeframeSel'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', render);
+  document.getElementById(id).addEventListener('change', render);
+});
+}
+</script>
+</body>
+</html>

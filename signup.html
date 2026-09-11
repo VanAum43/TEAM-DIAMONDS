@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create your account — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card" style="max-width:460px;">
+    <div class="auth-brand" id="brandLogo"></div>
+    <div class="auth-tag">Create your CropWise account — takes less than a minute.</div>
+
+    <form id="signupForm" novalidate>
+      <div class="field" id="nameField">
+        <label for="fullName">Full name</label>
+        <input type="text" id="fullName" placeholder="e.g. Rajesh Patel">
+        <div class="error-msg">Please enter your full name.</div>
+      </div>
+      <div class="field" id="mobileField">
+        <label for="mobile">Mobile number</label>
+        <input type="tel" id="mobile" placeholder="98250 12345" maxlength="10">
+        <div class="error-msg">Please enter a valid 10-digit mobile number.</div>
+      </div>
+      <div class="grid grid-2" style="gap:14px;">
+        <div class="field" id="pwField" style="margin-bottom:0;">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••">
+          <div class="error-msg">At least 6 characters.</div>
+        </div>
+        <div class="field" id="pw2Field" style="margin-bottom:0;">
+          <label for="password2">Confirm password</label>
+          <input type="password" id="password2" placeholder="••••••••">
+          <div class="error-msg">Passwords don't match.</div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:18px;">
+        <label for="primaryCrop">Primary crop</label>
+        <select id="primaryCrop"></select>
+      </div>
+
+      <div class="field">
+        <label>Your location</label>
+        <div id="locBox" class="loc-box">
+          <button type="button" class="btn btn-secondary btn-sm" id="useLocationBtn">Use My Current Location</button>
+          <div style="margin-top:10px;">
+            <select id="manualLocation" style="width:100%;">
+              <option value="">Or select manually…</option>
+              <option>Ahmedabad, Gujarat</option>
+              <option>Unjha, Gujarat</option>
+              <option>Rajkot, Gujarat</option>
+              <option>Mehsana, Gujarat</option>
+              <option>Deesa, Gujarat</option>
+              <option>Palanpur, Gujarat</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="checkbox-row"><input type="checkbox" id="terms"> I agree to CropWise's Terms of Service and Privacy Policy.</label>
+        <div class="error-msg" id="termsErr" style="display:none;">Please accept the terms to continue.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Create My CropWise Account</button>
+    </form>
+    <div class="auth-foot">Already have an account? <a href="login.html" style="color:var(--primary-green);font-weight:700;">Log in</a></div>
+  </div>
+</div>
+
+<!-- Firebase Compatibility SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+CW.redirectIfAuthed();
+document.getElementById('brandLogo').innerHTML = CW.icon('leaf') + '<span>CropWise</span>';
+document.getElementById('useLocationBtn').innerHTML = CW.icon('pin') + ' Use My Current Location';
+
+const cropSelect = document.getElementById('primaryCrop');
+CW.crops.forEach(c=>{
+  const opt = document.createElement('option');
+  opt.value = c.id; opt.textContent = c.name;
+  cropSelect.appendChild(opt);
+});
+
+let selectedLocation = null;
+
+document.getElementById('useLocationBtn').addEventListener('click', function(){
+  const btn = this;
+  const box = document.getElementById('locBox');
+  if(!navigator.geolocation){
+    CW.toast('Geolocation isn\'t supported on this browser — please select manually.', 'warning');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Detecting location…';
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    const { latitude, longitude } = pos.coords;
+    let label = null;
+    try{
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+      if(res.ok){
+        const data = await res.json();
+        label = [data.locality || data.city, data.principalSubdivision].filter(Boolean).join(', ');
+      }
+    }catch(err){ /* offline / blocked — fall back below */ }
+    if(!label) label = `Location detected (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`;
+    selectedLocation = { label, lat:latitude, lng:longitude };
+    renderDetected(selectedLocation);
+    CW.toast('Location detected', 'success');
+  }, function(err){
+    btn.disabled = false;
+    btn.innerHTML = CW.icon('pin') + ' Use My Current Location';
+    CW.toast('Location access denied — please select manually.', 'warning');
+  }, { timeout: 8000 });
+});
+
+function renderDetected(loc){
+  const box = document.getElementById('locBox');
+  box.classList.add('detected');
+  box.innerHTML = `
+    <div class="pin">${CW.icon('pin')}</div>
+    <div style="flex:1;">
+      <div class="name">${loc.label}</div>
+      <div class="sub">Detected automatically · tap to change below</div>
+      <select id="manualLocation" style="width:100%;margin-top:8px;">
+        <option value="">Keep detected location</option>
+        <option>Ahmedabad, Gujarat</option>
+        <option>Unjha, Gujarat</option>
+        <option>Rajkot, Gujarat</option>
+        <option>Mehsana, Gujarat</option>
+        <option>Deesa, Gujarat</option>
+        <option>Palanpur, Gujarat</option>
+      </select>
+    </div>`;
+  bindManualSelect();
+}
+function bindManualSelect(){
+  const sel = document.getElementById('manualLocation');
+  if(sel) sel.addEventListener('change', function(){
+    if(this.value){ selectedLocation = { label:this.value, lat:null, lng:null }; }
+  });
+}
+bindManualSelect();
+
+document.getElementById('mobile').addEventListener('input', function(){
+  this.value = this.value.replace(/\D/g,'').slice(0,10);
+});
+
+document.getElementById('signupForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const name = document.getElementById('fullName').value.trim();
+  const mobile = document.getElementById('mobile').value.trim();
+  const pw = document.getElementById('password').value;
+  const pw2 = document.getElementById('password2').value;
+  const terms = document.getElementById('terms').checked;
+  const manualSel = document.getElementById('manualLocation');
+  if(manualSel && manualSel.value) selectedLocation = { label: manualSel.value, lat:null, lng:null };
+  if(!selectedLocation) selectedLocation = { label:'Ahmedabad, Gujarat', lat:23.0225, lng:72.5714 };
+
+  let valid = true;
+  toggleErr('nameField', !name); if(!name) valid=false;
+  toggleErr('mobileField', mobile.length!==10); if(mobile.length!==10) valid=false;
+  toggleErr('pwField', pw.length<6); if(pw.length<6) valid=false;
+  toggleErr('pw2Field', pw!==pw2); if(pw!==pw2) valid=false;
+  document.getElementById('termsErr').style.display = terms ? 'none':'block';
+  if(!terms) valid=false;
+  if(!valid) return;
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating account…';
+
+  const result = await CW.signup({ name, mobile, password:pw, crop:cropSelect.value, location:selectedLocation });
+  if(result.ok){
+    CW.toast('Account created & saved to Firebase!', 'success');
+    setTimeout(()=> window.location.href = 'dashboard.html', 500);
+  }else{
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Create My CropWise Account';
+    CW.toast(result.error, 'error');
+  }
+});
+
+function toggleErr(id, isError){ document.getElementById(id).classList.toggle('has-error', isError); }
+</script>
+</body>
+</html>

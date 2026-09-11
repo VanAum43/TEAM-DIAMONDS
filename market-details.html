@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Your Real Earnings — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">NET RETURN CALCULATOR</div>
+      <h1 style="font-size:26px;">Compare Your Real Earnings</h1>
+      <p>See exactly what you'll take home from each market — not just the quoted price.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:22px;">
+    <div class="grid grid-4" style="gap:14px;">
+      <div class="field" style="margin:0;"><label>Crop</label><select id="cropSel"></select></div>
+      <div class="field" style="margin:0;"><label>Quantity (quintals)</label><input type="number" id="qtySel" value="25" min="1"></div>
+      <div class="field" style="margin:0;"><label>Grade</label>
+        <select id="gradeSel"><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option></select>
+      </div>
+      <div class="field" style="margin:0;"><label>Moisture (%)</label><input type="number" id="moistSel" value="10" min="0" max="30"></div>
+    </div>
+  </div>
+
+  <div class="flex-between" style="margin-bottom:14px;">
+    <h3 style="font-size:16px;margin:0;">Choose up to 3 markets to compare</h3>
+  </div>
+  <div class="flex-gap" id="marketPicker" style="margin-bottom:22px;"></div>
+
+  <div id="compareGrid" class="grid grid-3"></div>
+
+  <div id="insightBox" style="margin-top:24px;"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+if(CW.requireAuth()){
+const user = CW.getSession();
+CW.mountShell('compare');
+
+const params = new URLSearchParams(window.location.search);
+const cropSel = document.getElementById('cropSel');
+CW.crops.forEach(c=>{
+  const opt = document.createElement('option');
+  opt.value = c.id; opt.textContent = c.name;
+  cropSel.appendChild(opt);
+});
+cropSel.value = params.get('crop') || user.crop || 'wheat';
+document.getElementById('qtySel').value = params.get('qty') || user.quantity || 25;
+document.getElementById('gradeSel').value = params.get('grade') || user.grade || 'A';
+document.getElementById('moistSel').value = user.moisture || 10;
+
+let selectedMarkets = [];
+// pre-select: market from URL, then top two by net return
+function defaultSelection(){
+  const ranked = CW.rankOpportunities(cropSel.value, parseInt(document.getElementById('qtySel').value)||25, gradeSel.value);
+  const urlMarket = parseInt(params.get('market'));
+  let ids = ranked.slice(0,3).map(o=>o.market.id);
+  if(urlMarket && !ids.includes(urlMarket)) ids[2] = urlMarket;
+  return ids;
+}
+const gradeSel = document.getElementById('gradeSel');
+selectedMarkets = defaultSelection();
+
+function renderPicker(){
+  const picker = document.getElementById('marketPicker');
+  picker.innerHTML = CW.markets.map(m=>{
+    const active = selectedMarkets.includes(m.id);
+    return `<button type="button" class="btn ${active?'btn-primary':'btn-secondary'} btn-sm" data-id="${m.id}">${m.name}</button>`;
+  }).join('');
+  picker.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = parseInt(btn.dataset.id);
+      if(selectedMarkets.includes(id)){
+        selectedMarkets = selectedMarkets.filter(x=>x!==id);
+      }else{
+        if(selectedMarkets.length >= 3) selectedMarkets.shift();
+        selectedMarkets.push(id);
+      }
+      renderPicker();
+      renderCompare();
+    });
+  });
+}
+
+function letter(i){ return String.fromCharCode(65+i); }
+
+function renderCompare(){
+  const quantity = parseInt(document.getElementById('qtySel').value) || 25;
+  const grade = gradeSel.value;
+  const cropId = cropSel.value;
+  const chosen = selectedMarkets.map(id => CW.markets.find(m=>m.id===id)).filter(Boolean);
+  const grid = document.getElementById('compareGrid');
+
+  if(chosen.length === 0){
+    grid.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;"><div class="ico">${CW.icon('shuffle')}</div><h4>Select markets to compare</h4><p>Pick up to three markets above to see their real earnings side by side.</p></div>`;
+    document.getElementById('insightBox').innerHTML = '';
+    return;
+  }
+
+  const results = chosen.map(m => CW.buildOpportunity(m, cropId, quantity, grade));
+
+  grid.innerHTML = results.map((r,i)=>`
+    <div class="card fade-in">
+      <div class="eyebrow">MARKET ${letter(i)}</div>
+      <h3 style="font-size:18px;">${r.market.name}</h3>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">Quoted price: <b class="tabular">${CW.formatINR(r.price)}/q</b></div>
+      <div class="opp-row" style="padding:6px 0;"><span>Gross revenue</span><b class="tabular">${CW.formatINR(r.gross)}</b></div>
+      <div class="divider" style="margin:8px 0;"></div>
+      ${r.breakdown.map(b=>`<div class="opp-row" style="padding:4px 0;font-size:13px;"><span>${b.label}</span><span class="tabular" style="color:var(--danger);">-${CW.formatINR(b.value)}</span></div>`).join('')}
+      <div class="divider" style="margin:8px 0;"></div>
+      <div class="opp-net" style="margin-top:10px;"><div class="k">Estimated Net</div><div class="v tabular">${CW.formatINR(r.net)}</div></div>
+    </div>
+  `).join('');
+
+  if(results.length >= 2){
+    const sorted = results.slice().sort((a,b)=>b.net-a.net);
+    const top = sorted[0], second = sorted[1];
+    const diff = top.net - second.net;
+    document.getElementById('insightBox').innerHTML = `
+      <div class="recommend-card">
+        <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.75);">WHY THIS MARKET?</div>
+        <h3>${top.market.name} earns you approximately ${CW.formatINR(diff)} more</h3>
+        <p>${top.market.name} ${top.price < second.price ? 'has a lower quoted price than' : 'has a comparable quoted price to'} ${second.market.name}, but lower transportation and deduction costs mean more of the value reaches you. A higher quoted price does not always translate into higher earnings once realistic costs are included.</p>
+      </div>`;
+  }else{
+    document.getElementById('insightBox').innerHTML = '';
+  }
+}
+
+renderPicker();
+renderCompare();
+['cropSel','qtySel','gradeSel','moistSel'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{ renderCompare(); });
+  document.getElementById(id).addEventListener('input', ()=>{ renderCompare(); });
+});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buyer Details — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <a href="buyers.html" class="btn btn-ghost btn-sm" style="margin-bottom:14px;">← Back to Buyers</a>
+  <div id="buyerContent"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+if(CW.requireAuth()){
+const user = CW.getSession();
+CW.mountShell('buyers');
+
+const params = new URLSearchParams(window.location.search);
+const buyerId = parseInt(params.get('buyer')) || CW.buyers[0].id;
+const buyer = CW.buyers.find(b=>b.id===buyerId) || CW.buyers[0];
+
+const cropId = buyer.crops.includes(user.crop) ? user.crop : buyer.crops[0];
+const quantity = user.quantity || 25;
+const grade = user.grade || 'A';
+const basePrice = CW.crops.find(c=>c.id===cropId).basePrice;
+const indicativePrice = Math.round(basePrice * buyer.priceIdx * CW.gradeMultiplier[grade] / 5) * 5;
+const gross = quantity * indicativePrice;
+const estCommission = gross * 0.015;
+const estNet = gross - estCommission;
+
+document.getElementById('buyerContent').innerHTML = `
+  <div class="grid" style="grid-template-columns:1.1fr .9fr;gap:20px;align-items:start;">
+    <div class="card">
+      <div class="opp-top">
+        <div>
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:600;color:var(--dark-green);">${buyer.name}</div>
+          <div style="font-size:13px;color:var(--text-tertiary);">${buyer.city} · ${buyer.distance} km away</div>
+        </div>
+        ${buyer.verified ? `<span class="badge badge-success">${CW.icon('shield')} Verified</span>` : `<span class="badge badge-outline">Unverified</span>`}
+      </div>
+      <div class="grid grid-3" style="margin:18px 0;">
+        <div class="stat-card"><div class="label">Rating</div><div class="value">${buyer.rating.toFixed(1)} ★</div></div>
+        <div class="stat-card"><div class="label">Transactions</div><div class="value">${buyer.transactions}</div></div>
+        <div class="stat-card"><div class="label">Payment terms</div><div class="value" style="font-size:17px;">${buyer.paySpeed}</div></div>
+      </div>
+      <div class="divider"></div>
+      <h4 style="font-size:14px;">Crops purchased</h4>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">${buyer.crops.map(c=>`<span class="badge badge-neutral">${CW.cropName(c)}</span>`).join('')}</div>
+      <h4 style="font-size:14px;">Requirements</h4>
+      <p style="font-size:13.5px;">Purchases up to ${buyer.qtyCapacity} quintals per cycle. Demand fluctuates with mandi arrivals — quantities are best confirmed before dispatch.</p>
+      <h4 style="font-size:14px;">Price range</h4>
+      <p style="font-size:13.5px;">Typically ${CW.formatINR(basePrice*0.92)} – ${CW.formatINR(basePrice*1.08)} per quintal depending on grade and season.</p>
+      <div class="demo-tag">${CW.icon('warn')} Demo buyer profile for prototype demonstration.</div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="eyebrow">YOUR CROP WITH THIS BUYER</div>
+        <div class="opp-row" style="padding:8px 0;"><span>Your quantity</span><b class="tabular">${quantity} quintals (${CW.cropName(cropId)})</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Indicative price</span><b class="tabular">${CW.formatINR(indicativePrice)}/q</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Estimated gross</span><b class="tabular">${CW.formatINR(gross)}</b></div>
+        <div class="opp-net" style="margin-top:10px;"><div class="k">Estimated net</div><div class="v tabular">${CW.formatINR(estNet)}</div></div>
+      </div>
+
+      <div class="card">
+        <h4 style="font-size:14px;">Negotiation guide</h4>
+        <div class="opp-row" style="padding:8px 0;"><span>Suggested asking price</span><b class="tabular">${CW.formatINR(indicativePrice*1.03)}/q</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Minimum acceptable price</span><b class="tabular">${CW.formatINR(indicativePrice*0.95)}/q</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Expected net return</span><b class="tabular" style="color:var(--success);">${CW.formatINR(estNet)}</b></div>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">A frontend simulation — no offers are actually sent to the buyer.</p>
+        <a href="sell-crop.html?buyer=${buyer.id}" class="btn btn-primary btn-block">Start Selling Process</a>
+      </div>
+    </div>
+  </div>
+`;
+}
+</script>
+</body>
+</html>

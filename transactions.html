@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Transactions — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <div class="page-head"><div><div class="eyebrow">TRANSACTIONS</div><h1 style="font-size:26px;">My Transactions</h1><p>Your sales history, at a glance.</p></div></div>
+
+  <div class="grid grid-4" id="txnStats" style="margin-bottom:22px;"></div>
+
+  <div class="filter-bar">
+    <select id="statusFilter">
+      <option value="">All statuses</option>
+      <option>Completed</option><option>Pending</option><option>In Transit</option><option>Payment Pending</option>
+    </select>
+  </div>
+
+  <div id="txnTableWrap"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+if(CW.requireAuth()){
+CW.mountShell('transactions');
+
+const total = CW.transactions.length;
+const totalQty = CW.transactions.reduce((s,t)=>s+t.quantity,0);
+const avgPrice = Math.round(CW.transactions.reduce((s,t)=>s+t.price,0)/total);
+const avgNet = Math.round(CW.transactions.reduce((s,t)=>s+t.net,0)/total);
+
+document.getElementById('txnStats').innerHTML = [
+  { label:'Total Sales', value: total },
+  { label:'Total Quantity Sold', value: totalQty + ' q' },
+  { label:'Average Price', value: CW.formatINR(avgPrice)+'/q' },
+  { label:'Average Net Return', value: CW.formatINR(avgNet) },
+].map(s=>`<div class="stat-card"><div class="label">${s.label}</div><div class="value tabular">${s.value}</div></div>`).join('');
+
+function statusBadge(status){
+  const map = { Completed:'badge-success', Pending:'badge-outline', 'In Transit':'badge-neutral', 'Payment Pending':'badge-warning' };
+  return `<span class="badge ${map[status]||'badge-outline'}">${status}</span>`;
+}
+
+function render(){
+  const filter = document.getElementById('statusFilter').value;
+  const rows = CW.transactions.filter(t=> !filter || t.status===filter);
+  const wrap = document.getElementById('txnTableWrap');
+  if(rows.length===0){
+    wrap.innerHTML = `<div class="card empty-state"><div class="ico">${CW.icon('list')}</div><h4>No transactions yet</h4><p>Sales you complete will show up here.</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="card" style="padding:0;overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Crop</th><th>Quantity</th><th>Buyer/Market</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Status</th></tr></thead>
+      <tbody>
+        ${rows.map((t,i)=>`
+          <tr style="cursor:pointer;" data-idx="${CW.transactions.indexOf(t)}">
+            <td>${t.date}</td><td>${t.crop}</td><td class="tabular">${t.quantity} q</td>
+            <td>${t.buyer}<div style="font-size:11.5px;color:var(--text-tertiary);">${t.market}</div></td>
+            <td class="tabular">${CW.formatINR(t.gross)}</td>
+            <td class="tabular" style="color:var(--danger);">-${CW.formatINR(t.deductions)}</td>
+            <td class="tabular" style="font-weight:800;color:var(--success);">${CW.formatINR(t.net)}</td>
+            <td>${statusBadge(t.status)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+  wrap.querySelectorAll('tr[data-idx]').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const t = CW.transactions[parseInt(tr.dataset.idx)];
+      CW.showModal('Transaction ' + t.id, `
+        <div class="opp-row" style="padding:8px 0;"><span>Transaction ID</span><b>${t.id}</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Crop</span><b>${t.crop}</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Quantity</span><b>${t.quantity} quintals</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Price</span><b class="tabular">${CW.formatINR(t.price)}/q</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Market</span><b>${t.market}</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Buyer</span><b>${t.buyer}</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Deductions</span><b class="tabular" style="color:var(--danger);">-${CW.formatINR(t.deductions)}</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Net amount</span><b class="tabular" style="color:var(--success);">${CW.formatINR(t.net)}</b></div>
+        <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Payment status</span>${statusBadge(t.status)}</div>
+      `, `<button class="btn btn-secondary" onclick="CW.closeModal()">Close</button>`);
+    });
+  });
+}
+document.getElementById('statusFilter').addEventListener('change', render);
+render();
+}
+</script>
+</body>
+</html>

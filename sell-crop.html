@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sell Crop — CropWise</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div id="page-content" class="page">
+  <div class="page-head"><div><div class="eyebrow">SELL CROP</div><h1 style="font-size:26px;">Sell Your Crop</h1><p>A guided flow — nothing here is submitted externally, it's a frontend simulation.</p></div></div>
+
+  <div class="stepper" id="stepper"></div>
+
+  <div class="card" style="max-width:640px;margin:0 auto;">
+    <div id="stepBody"></div>
+    <div class="flex-between" style="margin-top:22px;">
+      <button class="btn btn-secondary" id="backBtn">Back</button>
+      <button class="btn btn-primary" id="nextBtn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase Compatibility SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+if(CW.requireAuth()){
+const user = CW.getSession();
+CW.mountShell('sell');
+
+const steps = ['Crop','Quantity','Quality','Market/Buyer','Review','Confirmation'];
+let current = 0;
+const state = {
+  crop: user.crop || 'wheat',
+  quantity: user.quantity || 25,
+  grade: user.grade || 'A',
+  moisture: user.moisture || 10,
+  targetId: null // market or buyer id
+};
+
+function renderStepper(){
+  document.getElementById('stepper').innerHTML = steps.map((s,i)=>`
+    <div class="st ${i<current?'done':i===current?'current':''}">
+      <div class="circ">${i<current?CW.icon('check'):i+1}</div>
+      <div class="lbl">${s}</div>
+    </div>`).join('');
+}
+
+function stepCrop(){
+  return `<h3 style="font-size:17px;">Select your crop</h3>
+    <div class="field"><select id="s_crop">${CW.crops.map(c=>`<option value="${c.id}" ${c.id===state.crop?'selected':''}>${c.name}</option>`).join('')}</select></div>`;
+}
+function stepQty(){
+  return `<h3 style="font-size:17px;">How much are you selling?</h3>
+    <div class="field"><label>Quantity (quintals)</label><input type="number" id="s_qty" value="${state.quantity}" min="1"></div>`;
+}
+function stepQuality(){
+  return `<h3 style="font-size:17px;">Grade and moisture</h3>
+    <div class="field"><label>Grade</label><select id="s_grade">
+      ${['A','B','C'].map(g=>`<option value="${g}" ${g===state.grade?'selected':''}>Grade ${g}</option>`).join('')}
+    </select></div>
+    <div class="field"><label>Moisture (%)</label><input type="number" id="s_moist" value="${state.moisture}" min="0" max="30"></div>`;
+}
+function stepMarket(){
+  const ranked = CW.rankOpportunities(state.crop, state.quantity, state.grade);
+  if(!state.targetId) state.targetId = ranked[0].market.id;
+  return `<h3 style="font-size:17px;">Choose a market</h3>
+    <p style="font-size:13px;">Ranked by estimated net return for your crop.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+    ${ranked.map(o=>`
+      <label style="display:flex;align-items:center;gap:12px;border:1.5px solid ${state.targetId===o.market.id?'var(--fresh-green)':'var(--border)'};border-radius:12px;padding:12px 14px;cursor:pointer;">
+        <input type="radio" name="s_market" value="${o.market.id}" ${state.targetId===o.market.id?'checked':''} style="accent-color:var(--primary-green);">
+        <span style="flex:1;"><b>${o.market.name}</b><br><span style="font-size:12px;color:var(--text-tertiary);">${o.market.distance} km away</span></span>
+        <b class="tabular" style="color:var(--success);">${CW.formatINR(o.net)}</b>
+      </label>`).join('')}
+    </div>`;
+}
+function stepReview(){
+  const market = CW.markets.find(m=>m.id===state.targetId);
+  const o = CW.buildOpportunity(market, state.crop, state.quantity, state.grade);
+  return `<h3 style="font-size:17px;">Review your sale</h3>
+    <div class="opp-row" style="padding:8px 0;"><span>Crop</span><b>${CW.cropName(state.crop)} · Grade ${state.grade}</b></div>
+    <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Quantity</span><b>${state.quantity} quintals</b></div>
+    <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Market</span><b>${market.name}</b></div>
+    <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Gross price</span><b class="tabular">${CW.formatINR(o.gross)}</b></div>
+    <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Transport</span><b class="tabular" style="color:var(--danger);">-${CW.formatINR(market.transportCost)}</b></div>
+    <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Commission</span><b class="tabular" style="color:var(--danger);">-${CW.formatINR(o.commission)}</b></div>
+    <div class="opp-row" style="padding:8px 0;border-top:1px solid var(--border);"><span>Other deductions</span><b class="tabular" style="color:var(--danger);">-${CW.formatINR(o.totalDeductions - market.transportCost - o.commission)}</b></div>
+    <div class="opp-net" style="margin-top:12px;"><div class="k">Net return</div><div class="v tabular">${CW.formatINR(o.net)}</div></div>`;
+}
+function stepConfirm(){
+  return `<div style="text-align:center;padding:20px 0;">
+    <div class="icon-btn" style="width:64px;height:64px;background:var(--success-bg);color:var(--success);margin:0 auto 18px;">${CW.icon('check_circle')}</div>
+    <h3 style="font-size:19px;">Your selling request is ready</h3>
+    <p>Your request has been saved to Firebase Database and recorded in your account.</p>
+    <a href="transactions.html" class="btn btn-primary">View My Transactions</a>
+  </div>`;
+}
+
+const renderers = [stepCrop, stepQty, stepQuality, stepMarket, stepReview, stepConfirm];
+
+function render(){
+  renderStepper();
+  document.getElementById('stepBody').innerHTML = renderers[current]();
+  document.getElementById('backBtn').style.visibility = current===0 || current===5 ? 'hidden':'visible';
+  document.getElementById('nextBtn').textContent = current===4 ? 'Confirm Sale' : current===5 ? 'Done' : 'Continue';
+  if(current===5) document.getElementById('nextBtn').style.display='none'; else document.getElementById('nextBtn').style.display='inline-flex';
+}
+
+function saveStepInput(){
+  if(current===0) state.crop = document.getElementById('s_crop').value;
+  if(current===1) state.quantity = parseInt(document.getElementById('s_qty').value)||25;
+  if(current===2){ state.grade = document.getElementById('s_grade').value; state.moisture = parseInt(document.getElementById('s_moist').value)||10; }
+  if(current===3){ const r = document.querySelector('input[name="s_market"]:checked'); if(r) state.targetId = parseInt(r.value); }
+}
+
+document.getElementById('nextBtn').addEventListener('click', async ()=>{
+  saveStepInput();
+  if(current === 4){
+    const market = CW.markets.find(m=>m.id===state.targetId);
+    const o = CW.buildOpportunity(market, state.crop, state.quantity, state.grade);
+    const txn = {
+      id:'TXN-'+Math.floor(10000+Math.random()*9999),
+      date:new Date().toISOString().slice(0,10),
+      crop:CW.cropName(state.crop),
+      quantity:state.quantity,
+      market:market.name,
+      buyer:'Pending assignment',
+      price:o.price,
+      gross:Math.round(o.gross),
+      deductions:Math.round(o.totalDeductions),
+      net:Math.round(o.net),
+      status:'Pending'
+    };
+    CW.transactions.unshift(txn);
+
+    // Save to Firebase Firestore Database
+    await CW.saveToDatabase('transactions', txn);
+    CW.toast('Sale request confirmed & saved to Firebase!', 'success');
+  }
+  if(current < 5) current++;
+  render();
+});
+
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  saveStepInput();
+  if(current > 0) current--;
+  render();
+});
+
+render();
+}
+</script>
+</body>
+</html>
