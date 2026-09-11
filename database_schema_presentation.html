@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropWise Database Schema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate-50 */
+            color: #334155; /* Slate-700 */
+        }
+        
+        .schema-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0; /* Slate-200 */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .schema-header {
+            padding: 1rem;
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .schema-list {
+            padding: 1rem;
+            flex-grow: 1;
+        }
+
+        .schema-list ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .schema-list li {
+            padding: 0.25rem 0;
+            font-size: 0.875rem; /* text-sm */
+            display: flex;
+            align-items: center;
+        }
+        
+        .schema-list li::before {
+            content: "•";
+            color: #94a3b8; /* Slate-400 */
+            margin-right: 0.5rem;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .pk-indicator {
+            color: #ef4444; /* Red-500 */
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
+            font-weight: bold;
+        }
+
+        .fk-indicator {
+            color: #3b82f6; /* Blue-500 */
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
+            font-weight: bold;
+        }
+
+        /* Specific header colors matching the image */
+        .header-market { background-color: #dbeafe; color: #1e3a8a; } /* Blue tint */
+        .header-cropprice { background-color: #ede9fe; color: #4c1d95; } /* Purple tint */
+        .header-marketcost { background-color: #dcfce7; color: #14532d; } /* Green tint */
+        .header-userinput { background-color: #fce7f3; color: #831843; } /* Pink tint */
+
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-10 text-center">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">
+                <i class="fa-solid fa-database text-blue-500 mr-3"></i>
+                Database (Planned Schema)
+            </h1>
+            <p class="text-slate-500">Relational data model for the CropWise application</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            <!-- MARKET Table -->
+            <div class="schema-card">
+                <div class="schema-header header-market">
+                    MARKET
+                </div>
+                <div class="schema-list">
+                    <ul>
+                        <li>market_id <span class="pk-indicator">(PK)</span></li>
+                        <li>market_name</li>
+                        <li>location</li>
+                        <li>distance</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- CROP_PRICE Table -->
+            <div class="schema-card">
+                <div class="schema-header header-cropprice">
+                    CROP_PRICE
+                </div>
+                <div class="schema-list">
+                    <ul>
+                        <li>price_id <span class="pk-indicator">(PK)</span></li>
+                        <li>market_id <span class="fk-indicator">(FK)</span></li>
+                        <li>crop</li>
+                        <li>grade</li>
+                        <li>price_per_quintal</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- MARKET_COST Table -->
+            <div class="schema-card">
+                <div class="schema-header header-marketcost">
+                    MARKET_COST
+                </div>
+                <div class="schema-list">
+                    <ul>
+                        <li>cost_id <span class="pk-indicator">(PK)</span></li>
+                        <li>market_id <span class="fk-indicator">(FK)</span></li>
+                        <li>transport_cost</li>
+                        <li>loading_cost</li>
+                        <li>toll_cost</li>
+                        <li>commission</li>
+                        <li>moisture_deduction</li>
+                        <li>waiting_risk</li>
+                        <li>rejection_risk</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- USER_INPUT Table -->
+            <div class="schema-card">
+                <div class="schema-header header-userinput">
+                    USER_INPUT
+                </div>
+                <div class="schema-list">
+                    <ul>
+                        <li>input_id <span class="pk-indicator">(PK)</span></li>
+                        <li>crop</li>
+                        <li>quantity</li>
+                        <li>grade</li>
+                        <li>location</li>
+                        <li>date</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="mt-8 flex justify-center space-x-6 text-sm text-slate-500">
+            <div class="flex items-center">
+                <span class="pk-indicator mr-1 text-base">(PK)</span> Primary Key
+            </div>
+            <div class="flex items-center">
+                <span class="fk-indicator mr-1 text-base">(FK)</span> Foreign Key
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CropWise Wireframes</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        agrigreen: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        amber: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f3f4f6; /* Light gray background for the overall page */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Mobile device frame styling */
+        .device-mockup {
+            width: 375px; /* Typical mobile width */
+            height: 812px; /* Typical mobile height (iPhone X style) */
+            background-color: white;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            position: relative;
+            border: 8px solid #1f2937; /* Dark gray border acting as phone bezel */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* The notch */
+        .device-mockup::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background-color: #1f2937;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            z-index: 50;
+        }
+
+        /* Screen container */
+        .screen {
+            display: none; /* Hide all screens by default */
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            background-color: #f9fafb;
+            animation: fadeIn 0.3s ease-in-out;
+            overflow-y: auto; /* Allow scrolling within the screen */
+        }
+
+        .screen.active {
+            display: flex; /* Show active screen */
+        }
+
+        /* Custom Scrollbar for screens */
+        .screen::-webkit-scrollbar {
+            width: 4px;
+        }
+        .screen::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .screen::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Top Status Bar Mockup */
+        .status-bar {
+            height: 44px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f2937;
+            background-color: transparent; /* Makes it blend with header */
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 40;
+        }
+        
+        .status-bar.dark-text { color: #1f2937; }
+        .status-bar.light-text { color: white; }
+
+        /* Navigation Buttons (for the demo wrapper) */
+        .demo-controls {
+            position: fixed;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .demo-btn {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            color: #374151;
+        }
+
+        .demo-btn:hover {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .demo-btn.active-btn {
+            background-color: #166534;
+            color: white;
+            border-color: #14532d;
+        }
+        
+        /* Bottom Navigation Bar for App */
+        .bottom-nav {
+            background-color: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0 20px 0; /* Extra padding for bottom home indicator */
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            z-index: 30;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #9ca3af;
+            font-size: 10px;
+            gap: 4px;
+        }
+        
+        .nav-item.active {
+            color: #16a34a;
+        }
+        
+        .nav-item i {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controls to navigate between screens in the mockup -->
+    <div class="demo-controls hidden md:flex">
+        <h3 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wider">Wireframe Flow</h3>
+        <button class="demo-btn active-btn" onclick="showScreen('screen-home', this)">1. Home / Input Data</button>
+        <button class="demo-btn" onclick="showScreen('screen-loading', this)">2. Processing</button>
+        <button class="demo-btn" onclick="showScreen('screen-results', this)">3. Mandi Comparison</button>
+        <button class="demo-btn" onclick="showScreen('screen-details', this)">4. Detailed Calculation</button>
+    </div>
+
+    <!-- The Phone Mockup -->
+    <div class="device-mockup">
+        
+        <!-- Fake Status Bar -->
+        <div class="status-bar light-text" id="status-bar">
+            <span>9:41</span>
+            <div class="flex gap-1 items-center">
+                <i class="fa-solid fa-signal text-[10px]"></i>
+                <i class="fa-solid fa-wifi text-[10px]"></i>
+                <i class="fa-solid fa-battery-full text-[12px]"></i>
+            </div>
+        </div>
+
+        <!-- SCREEN 1: Home / Input Form -->
+        <div id="screen-home" class="screen active">
+            <!-- Header -->
+            <div class="bg-agrigreen-800 text-white pt-14 pb-16 px-6 relative rounded-b-3xl shadow-md">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">CropWise</h1>
+                        <p class="text-agrigreen-100 text-xs">Sell Smarter. Earn Better.</p>
+                    </div>
+                    <div class="h-10 w-10 bg-white rounded-full flex items-center justify-center text-agrigreen-800">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                </div>
+                <h2 class="text-xl font-semibold mb-1">New Assessment</h2>
+                <p class="text-sm text-agrigreen-100 opacity-90">Enter details to find your best return.</p>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="flex-1 px-5 -mt-8 relative z-10 pb-20">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
+                    
+                    <!-- Form Fields -->
+                    <div class="space-y-4">
+                        <!-- Location -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide"><i class="fa-solid fa-location-dot mr-1 text-agrigreen-500"></i> Your Location</label>
+                            <div class="relative">
+                                <input type="text" value="Village Pipliya, Sehore" class="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-agrigreen-500" readonly>
+                                <button class="absolute right-2 top-1/2 -translate-y-1/2 text-agrigreen-600 text-xs font-semibold">CHANGE</button>
+                            </div>
+                        </div>
+
+                        <!-- Crop Selection -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide"><i class="fa-solid fa-wheat-awn mr-1 text-amber-500"></i> Select Crop</label>
+                            <select class="w-full bg-white border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-agrigreen-500 appearance-none font-medium">
+                                <option>Wheat (Sharbati)</option>
+                                <option>Soyabean</option>
+                                <option>Chana (Gram)</option>
+                            </select>
+                        </div>
+
+                        <!-- Quantity & Grade Grid -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide"><i class="fa-solid fa-weight-scale mr-1 text-blue-500"></i> Qty (Quintals)</label>
+                                <input type="number" value="50" class="w-full bg-white border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-agrigreen-500 font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide"><i class="fa-solid fa-star mr-1 text-amber-400"></i> Grade</label>
+                                <select class="w-full bg-white border border-gray-200 rounded-lg py-2.5 px-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-agrigreen-500 appearance-none font-medium">
+                                    <option>Grade A</option>
+                                    <option>Grade B</option>
+                                    <option>FAQ</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Moisture Level Slider -->
+                        <div>
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide"><i class="fa-solid fa-droplet mr-1 text-cyan-500"></i> Est. Moisture</label>
+                                <span class="text-sm font-bold text-gray-800">12%</span>
+                            </div>
+                            <input type="range" min="8" max="20" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-agrigreen-600">
+                            <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+                                <span>Dry (8%)</span>
+                                <span>Wet (20%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="simulateLoading()" class="w-full bg-agrigreen-600 hover:bg-agrigreen-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-agrigreen-500/30 transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+                    <i class="fa-solid fa-calculator"></i> Calculate Best Return
+                </button>
+            </div>
+
+            <!-- Bottom Nav -->
+            <div class="bottom-nav">
+                <div class="nav-item active"><i class="fa-solid fa-house"></i><span>Home</span></div>
+                <div class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></div>
+                <div class="nav-item"><i class="fa-solid fa-chart-line"></i><span>Trends</span></div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: Loading / Processing -->
+        <div id="screen-loading" class="screen bg-agrigreen-800 justify-center items-center">
+            <div class="text-center px-8">
+                <!-- Animated Icon -->
+                <div class="relative w-24 h-24 mx-auto mb-6">
+                    <div class="absolute inset-0 border-4 border-agrigreen-600/30 rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-amber-400 rounded-full border-t-transparent animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-3xl text-white">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </div>
+                </div>
+                
+                <h2 class="text-xl font-bold text-white mb-2">Analyzing Mandis...</h2>
+                
+                <!-- Progress steps -->
+                <div class="space-y-3 text-left mt-8">
+                    <div class="flex items-center gap-3 text-agrigreen-100 text-sm">
+                        <i class="fa-solid fa-circle-check text-green-400"></i> Fetching live prices...
+                    </div>
+                    <div class="flex items-center gap-3 text-agrigreen-100 text-sm">
+                        <i class="fa-solid fa-circle-check text-green-400"></i> Calculating logistics...
+                    </div>
+                    <div class="flex items-center gap-3 text-white text-sm font-medium animate-pulse">
+                        <i class="fa-solid fa-circle-notch animate-spin text-amber-400"></i> Estimating net returns...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: Results / Mandi Comparison -->
+        <div id="screen-results" class="screen">
+            <!-- Header -->
+            <div class="bg-white pt-14 pb-4 px-5 shadow-sm sticky top-0 z-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <button onclick="navigateDemo('screen-home')" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h1 class="text-lg font-bold text-gray-900">Mandi Comparison</h1>
+                </div>
+                <div class="flex gap-2 text-xs text-gray-500 font-medium">
+                    <span class="bg-gray-100 px-2 py-1 rounded">Wheat • 50 Qtl</span>
+                    <span class="bg-gray-100 px-2 py-1 rounded">Grade A • 12% Moisture</span>
+                </div>
+            </div>
+
+            <div class="flex-1 px-4 py-4 pb-20">
+                <h2 class="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">Best Net Return</h2>
+                
+                <!-- TOP RECOMMENDATION CARD -->
+                <div onclick="navigateDemo('screen-details')" class="bg-gradient-to-br from-agrigreen-700 to-agrigreen-900 rounded-2xl p-1 mb-6 shadow-lg shadow-agrigreen-600/20 cursor-pointer transform transition active:scale-[0.98]">
+                    <div class="bg-white rounded-xl p-4 h-full relative overflow-hidden">
+                        <!-- Recommend Badge -->
+                        <div class="absolute -right-6 top-3 bg-amber-400 text-amber-900 text-[10px] font-bold py-1 px-8 rotate-45">
+                            RECOMMENDED
+                        </div>
+                        
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">Sehore Mandi</h3>
+                                <p class="text-xs text-gray-500"><i class="fa-solid fa-truck text-gray-400 mr-1"></i> 18 km away</p>
+                            </div>
+                        </div>
+
+                        <!-- Price Comparison Area -->
+                        <div class="flex items-center gap-4 mb-4 bg-gray-50 rounded-lg p-3">
+                            <div class="flex-1">
+                                <p class="text-[10px] text-gray-500 font-semibold uppercase">Quoted Price</p>
+                                <p class="text-sm font-semibold text-gray-600 line-through decoration-red-400/50">₹2,450 /qtl</p>
+                            </div>
+                            <div class="h-8 w-px bg-gray-200"></div>
+                            <div class="flex-1 text-right">
+                                <p class="text-[10px] text-agrigreen-600 font-bold uppercase">Expected Net</p>
+                                <p class="text-xl font-bold text-agrigreen-700">₹2,310 <span class="text-xs font-normal">/qtl</span></p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+                            <div>
+                                <p class="text-[10px] text-gray-500 font-medium">Total Est. Earning (50 Qtl)</p>
+                                <p class="text-lg font-bold text-gray-900">₹1,15,500</p>
+                            </div>
+                            <button class="text-agrigreen-600 text-xs font-bold flex items-center gap-1">
+                                View Math <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">Other Options</h2>
+
+                <!-- Alternative Option 1 -->
+                <div class="bg-white rounded-xl p-4 mb-3 border border-gray-200 shadow-sm opacity-90">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Ashta Mandi</h3>
+                            <p class="text-xs text-gray-500"><i class="fa-solid fa-truck text-gray-400 mr-1"></i> 42 km away</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-500 font-semibold uppercase">Quoted</p>
+                            <p class="text-sm font-bold text-amber-500">₹2,480 /qtl</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center bg-red-50 text-red-700 text-xs py-1.5 px-3 rounded-md mb-2 border border-red-100">
+                        <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> High transport cost</span>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-[10px] text-gray-500">Est. Total</p>
+                            <p class="text-sm font-bold text-gray-800">₹1,12,200</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-500">Net Price</p>
+                            <p class="text-base font-bold text-gray-800">₹2,244 /qtl</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternative Option 2 -->
+                <div class="bg-white rounded-xl p-4 mb-3 border border-gray-200 shadow-sm opacity-90">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Bhopal Karond</h3>
+                            <p class="text-xs text-gray-500"><i class="fa-solid fa-truck text-gray-400 mr-1"></i> 55 km away</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-500 font-semibold uppercase">Quoted</p>
+                            <p class="text-sm font-bold text-amber-500">₹2,500 /qtl</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center bg-red-50 text-red-700 text-xs py-1.5 px-3 rounded-md mb-2 border border-red-100">
+                        <span><i class="fa-solid fa-clock mr-1"></i> High waiting time</span>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-[10px] text-gray-500">Est. Total</p>
+                            <p class="text-sm font-bold text-gray-800">₹1,10,500</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-500">Net Price</p>
+                            <p class="text-base font-bold text-gray-800">₹2,210 /qtl</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Nav (Hidden on detail screens usually, but keeping for wireframe context) -->
+             <div class="bottom-nav">
+                <div class="nav-item active"><i class="fa-solid fa-house"></i><span>Home</span></div>
+                <div class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></div>
+                <div class="nav-item"><i class="fa-solid fa-chart-line"></i><span>Trends</span></div>
+            </div>
+        </div>
+
+        <!-- SCREEN 4: Detailed Calculation -->
+        <div id="screen-details" class="screen bg-gray-50">
+            <!-- Header -->
+            <div class="bg-white pt-14 pb-4 px-5 shadow-sm sticky top-0 z-20">
+                <div class="flex justify-between items-center">
+                    <button onclick="navigateDemo('screen-results')" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h1 class="text-base font-bold text-gray-900">Breakdown</h1>
+                    <button class="text-agrigreen-600 font-semibold text-sm">Save</button>
+                </div>
+            </div>
+
+            <div class="flex-1 px-5 py-6 pb-20">
+                <h2 class="text-2xl font-bold text-gray-900 mb-1">Sehore Mandi</h2>
+                <p class="text-sm text-gray-500 mb-6">Calculation for 50 Quintals</p>
+
+                <!-- Calculation Receipt UI -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    
+                    <!-- Gross Total -->
+                    <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Gross Value</p>
+                            <p class="text-xs text-gray-500">50 Qtl × ₹2,450</p>
+                        </div>
+                        <p class="text-lg font-bold text-gray-900">₹1,22,500</p>
+                    </div>
+
+                    <!-- Deductions List -->
+                    <div class="p-4 space-y-4">
+                        <h3 class="text-xs font-bold text-red-500 uppercase tracking-wide border-b border-gray-100 pb-2">Estimated Deductions</h3>
+                        
+                        <!-- Logistics -->
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-truck"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">Transportation & Tolls</p>
+                                    <p class="text-xs text-gray-500">18km route + loading</p>
+                                </div>
+                            </div>
+                            <p class="text-sm font-semibold text-red-600">-₹2,500</p>
+                        </div>
+
+                        <!-- Mandi Fees -->
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">Mandi Fees & Comm.</p>
+                                    <p class="text-xs text-gray-500">Standard rate ~1.5%</p>
+                                </div>
+                            </div>
+                            <p class="text-sm font-semibold text-red-600">-₹1,837</p>
+                        </div>
+
+                        <!-- Quality Deduction -->
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 rounded-full bg-cyan-50 text-cyan-500 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-droplet-slash"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">Moisture Penalty</p>
+                                    <p class="text-xs text-gray-500">12% est. (above 10% base)</p>
+                                </div>
+                            </div>
+                            <p class="text-sm font-semibold text-red-600">-₹2,663</p>
+                        </div>
+                    </div>
+
+                    <!-- Net Total -->
+                    <div class="bg-agrigreen-50 p-4 border-t border-agrigreen-200">
+                        <div class="flex justify-between items-end mb-1">
+                            <p class="text-sm font-bold text-agrigreen-800 uppercase tracking-wide">Est. Net Return</p>
+                            <p class="text-2xl font-bold text-agrigreen-700">₹1,15,500</p>
+                        </div>
+                        <div class="flex justify-between text-xs text-agrigreen-600 font-medium">
+                            <p>Actual expected in hand</p>
+                            <p>Effective: ₹2,310/qtl</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button class="w-full bg-gray-900 text-white font-semibold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-map-location-dot"></i> Get Directions
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Function to handle switching between screens in the mockup
+        function showScreen(screenId, btnElement = null) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show target screen
+            document.getElementById(screenId).classList.add('active');
+            
+            // Update demo buttons state if clicked from sidebar
+            if (btnElement) {
+                document.querySelectorAll('.demo-btn').forEach(el => {
+                    el.classList.remove('active-btn');
+                });
+                btnElement.classList.add('active-btn');
+            } else {
+                // If triggered by app button, update the sidebar silently
+                updateSidebarActive(screenId);
+            }
+            
+            // Adjust fake status bar color based on screen background
+            const statusBar = document.getElementById('status-bar');
+            if (screenId === 'screen-home' || screenId === 'screen-loading') {
+                statusBar.className = 'status-bar light-text';
+            } else {
+                statusBar.className = 'status-bar dark-text';
+            }
+        }
+
+        // Helper to keep sidebar buttons in sync with app navigation
+        function updateSidebarActive(screenId) {
+            const buttons = document.querySelectorAll('.demo-btn');
+            buttons.forEach(btn => btn.classList.remove('active-btn'));
+            
+            if(screenId === 'screen-home') buttons[0].classList.add('active-btn');
+            if(screenId === 'screen-loading') buttons[1].classList.add('active-btn');
+            if(screenId === 'screen-results') buttons[2].classList.add('active-btn');
+            if(screenId === 'screen-details') buttons[3].classList.add('active-btn');
+        }
+
+        // Internal app navigation helper
+        function navigateDemo(screenId) {
+            showScreen(screenId);
+        }
+
+        // Simulate the calculation loading process
+        function simulateLoading() {
+            showScreen('screen-loading');
+            
+            // Automatically move to results after 2.5 seconds
+            setTimeout(() => {
+                showScreen('screen-results');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
